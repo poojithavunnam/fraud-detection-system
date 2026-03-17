@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div class="login-container">
+    <div class="login-card">
+
+        <h2>Bank Fraud Detection</h2>
+
+        <input id="email" placeholder="Email">
+        <input id="password" type="password" placeholder="Password">
+
+        <button onclick="login()">Login</button>
+
+        <p id="msg"></p>
+
+    </div>
+</div>
+
+<script>
+async function login() {
+
+    const response = await fetch("/login", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            email: email.value,
+            password: password.value
+        })
+    });
+
+    if(response.ok){
+        window.location.href="/dashboard";
+    } else {
+        msg.innerText="Login Failed";
+    }
+}
+</script>
+
+</body>
+</html>

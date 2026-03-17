@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <div class="header">
+        Transaction Fraud Dashboard
+    </div>
+
+    <div class="upload-box">
+        <input type="file" id="file">
+        <button onclick="upload()">Upload Transactions</button>
+    </div>
+
+    <div class="stats-container">
+        <div class="card">
+            <h3>Total Transactions</h3>
+            <p id="total">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Fraud Detected</h3>
+            <p id="fraud">0</p>
+        </div>
+    </div>
+
+</div>
+
+
+ <script>
+
+async function upload(){
+
+    const fileInput = document.getElementById("file");
+
+    if(!fileInput.files.length){
+        alert("Upload a file first");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    const res = await fetch("/upload",{
+        method:"POST",
+        body:formData
+    });
+
+    const data = await res.json();
+
+    // ✅ update UI ONLY after upload
+    document.getElementById("total").innerText = data.total;
+    document.getElementById("fraud").innerText = data.fraud;
+}
+
+</script>
+
+</body>
+</html>
