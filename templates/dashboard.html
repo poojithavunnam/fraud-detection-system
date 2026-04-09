@@ -1,64 +1,329 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Banking Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
 
-<div class="dashboard">
-
-    <div class="header">
-        Transaction Fraud Dashboard
+<div id="loading-overlay">
+    <div style="text-align: center;">
+        <div class="spinner"></div>
+        <p style="margin-top: 1rem; font-weight: 500;" id="loading-text">Analyzing Transactions...</p>
     </div>
-
-    <div class="upload-box">
-        <input type="file" id="file">
-        <button onclick="upload()">Upload Transactions</button>
-    </div>
-
-    <div class="stats-container">
-        <div class="card">
-            <h3>Total Transactions</h3>
-            <p id="total">0</p>
-        </div>
-
-        <div class="card">
-            <h3>Fraud Detected</h3>
-            <p id="fraud">0</p>
-        </div>
-    </div>
-
 </div>
 
+<div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 3rem; padding-left: 0.5rem;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span style="font-size: 1.25rem; font-weight: 700; color: var(--text-main);">Banklytics</span>
+        </div>
 
- <script>
+        <nav style="flex: 1;">
+            <div onclick="switchView('overview')" class="nav-item active" id="nav-overview">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                Dashboard
+            </div>
+            <div onclick="switchView('transactions')" class="nav-item" id="nav-transactions">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                Transactions
+            </div>
+            <div onclick="switchView('fraud')" class="nav-item" id="nav-fraud">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                Fraud Cases
+            </div>
+        </nav>
 
-async function upload(){
+        <div style="margin-top: auto; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+            <div onclick="logout()" class="nav-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Logout
+            </div>
+        </div>
+    </aside>
 
-    const fileInput = document.getElementById("file");
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="header-bar">
+            <div>
+                <h1 id="view-title">Overview</h1>
+                <p id="view-subtitle">Welcome back, monitoring fraudulent activities.</p>
+            </div>
+            <div id="user-display" style="font-weight: 500; font-size: 0.875rem; background: #f1f5f9; padding: 0.5rem 1rem; border-radius: 2rem;"></div>
+        </header>
 
-    if(!fileInput.files.length){
-        alert("Upload a file first");
-        return;
+        <!-- Overview Section -->
+        <div id="section-overview" class="view-section active">
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="label">Total Transactions</span>
+                    <span class="value" id="total-val">0</span>
+                </div>
+                <div class="stat-card fraud">
+                    <span class="label">Fraud Detected</span>
+                    <span class="value" id="fraud-val">0</span>
+                </div>
+                <div class="stat-card safe">
+                    <span class="label">Safe Transactions</span>
+                    <span class="value" id="safe-val">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Avg. Transaction</span>
+                    <span class="value" id="avg-val">₹0.00</span>
+                </div>
+            </div>
+
+            <!-- Upload Zone -->
+            <div class="upload-zone" onclick="document.getElementById('file-input').click()" id="drop-zone">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <h3>Upload Dataset</h3>
+                <p>Drag and drop your transaction CSV here or click to browse</p>
+                <input type="file" id="file-input" onchange="handleUpload(this.files[0])">
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3 style="margin-bottom: 1.5rem;">Fraud Analytics</h3>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="fraudChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3 style="margin-bottom: 1.5rem;">Geo Distribution</h3>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="geoChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions/Fraud Table Section -->
+        <div id="section-list" class="view-section">
+            <div class="table-container">
+                <table id="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Amount (₹)</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Rows will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+let fraudChart, geoChart;
+let currentActiveView = 'overview';
+
+// Initialize on page load
+window.onload = async () => {
+    fetchStats();
+    document.getElementById("user-display").innerText = "Security Expert";
+};
+
+async function switchView(view) {
+    currentActiveView = view;
+    
+    // UI Cleanup
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(`nav-${view}`).classList.add('active');
+    
+    const titleEl = document.getElementById('view-title');
+    const subtitleEl = document.getElementById('view-subtitle');
+
+    if (view === 'overview') {
+        titleEl.innerText = 'Overview';
+        subtitleEl.innerText = 'Welcome back, monitoring fraudulent activities.';
+        document.getElementById('section-overview').classList.add('active');
+        fetchStats();
+    } else {
+        document.getElementById('section-list').classList.add('active');
+        if (view === 'transactions') {
+            titleEl.innerText = 'All Transactions';
+            subtitleEl.innerText = 'Detailed history of all processed records.';
+            fetchListData(null);
+        } else if (view === 'fraud') {
+            titleEl.innerText = 'Fraud Cases';
+            subtitleEl.innerText = 'Transactions flagged by the rule engine.';
+            fetchListData(1);
+        }
     }
-
-    let formData = new FormData();
-    formData.append("file", fileInput.files[0]);
-
-    const res = await fetch("/upload",{
-        method:"POST",
-        body:formData
-    });
-
-    const data = await res.json();
-
-    // ✅ update UI ONLY after upload
-    document.getElementById("total").innerText = data.total;
-    document.getElementById("fraud").innerText = data.fraud;
 }
 
+async function fetchStats() {
+    try {
+        const res = await fetch("/api/dashboard/stats");
+        const data = await res.json();
+
+        if (data.status === "success" && data.total_transactions > 0) {
+            updateDashboard(data);
+        }
+    } catch (err) {
+        console.error("Failed to fetch stats", err);
+    }
+}
+
+async function fetchListData(fraudOnly) {
+    const tableBody = document.getElementById('table-body');
+    tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem;">Loading data...</td></tr>';
+    
+    try {
+        const url = fraudOnly !== null ? `/api/transactions/list?fraud=${fraudOnly}` : '/api/transactions/list';
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            renderTable(data.transactions);
+        }
+    } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--danger);">Failed to load transactions.</td></tr>';
+    }
+}
+
+function renderTable(txs) {
+    const tableBody = document.getElementById('table-body');
+    if (txs.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem;">No records found.</td></tr>';
+        return;
+    }
+    
+    tableBody.innerHTML = txs.map(tx => `
+        <tr>
+            <td>#${tx.id}</td>
+            <td style="font-weight: 600;">₹${tx.amount.toLocaleString()}</td>
+            <td>${tx.location}</td>
+            <td>
+                <span class="badge ${tx.fraud ? 'badge-danger' : 'badge-success'}">
+                    ${tx.fraud ? 'Fraudulent' : 'Safe'}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateDashboard(data) {
+    document.getElementById("total-val").innerText = data.total_transactions;
+    document.getElementById("fraud-val").innerText = data.fraud_detected;
+    document.getElementById("safe-val").innerText = data.safe_transactions;
+    document.getElementById("avg-val").innerText = "₹" + data.avg_transaction_amount.toLocaleString();
+
+    updateCharts(data);
+}
+
+function updateCharts(data) {
+    if (fraudChart) fraudChart.destroy();
+    const ctxF = document.getElementById('fraudChart').getContext('2d');
+    fraudChart = new Chart(ctxF, {
+        type: 'doughnut',
+        data: {
+            labels: ['Safe', 'Fraudulent'],
+            datasets: [{
+                data: [data.safe_transactions, data.fraud_detected],
+                backgroundColor: ['#10b981', '#ef4444'],
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            },
+            cutout: '70%'
+        }
+    });
+
+    if (geoChart) geoChart.destroy();
+    const ctxG = document.getElementById('geoChart').getContext('2d');
+    const labels = Object.keys(data.top_locations);
+    const values = Object.values(data.top_locations);
+
+    geoChart = new Chart(ctxG, {
+        type: 'polarArea',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: [
+                    'rgba(79, 70, 229, 0.6)',
+                    'rgba(99, 102, 241, 0.6)',
+                    'rgba(129, 140, 248, 0.6)',
+                    'rgba(165, 180, 252, 0.6)',
+                    'rgba(199, 210, 254, 0.6)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
+
+async function handleUpload(file) {
+    if (!file) return;
+
+    document.getElementById("loading-overlay").style.display = "flex";
+    document.getElementById("loading-text").innerText = "Analyzing Transactions...";
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const response = await fetch("/api/transactions/upload", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            setTimeout(() => {
+                document.getElementById("loading-overlay").style.display = "none";
+                if (currentActiveView === 'overview') fetchStats();
+                else switchView(currentActiveView);
+            }, 1000);
+        } else {
+            document.getElementById("loading-overlay").style.display = "none";
+            alert(data.error || "Upload failed");
+        }
+    } catch (err) {
+        document.getElementById("loading-overlay").style.display = "none";
+        alert("An error occurred during upload.");
+    }
+}
+
+async function logout() {
+    await fetch("/api/auth/logout");
+    window.location.href = "/login";
+}
 </script>
 
 </body>
